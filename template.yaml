@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: python3.8
+    Handler: app.lambda_handler
+
+Description: >
+  
+  SAM Template for cce challenge
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: Bucket name
+
+  TableName:
+    Type: String
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: Required. Can be characters and underscore only. No numbers or special characters allowed.
+    Default: yourTableName
+    Description: (Required) The name of the new DynamoDB table you want to create and save to. Minimum 3 characters
+    MaxLength: 50
+    MinLength: 3
+
+Resources:
+  JSONBucket: # Create S3 bucket to be used for upload and retrieve json files
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: 
+        Ref: S3BucketName
+  UploadFunction: # Upload json file to S3
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/upload_json/
+      # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Linear10PercentEvery10Minutes
+      Events:
+        UploadFunction:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /upload-json
+            Method: POST
+
+  DynamoS3Function: # Lambda to retrieve data from dynamodb
+    Type: AWS::Serverless::Function
+    Properties:
+        CodeUri: functions/retrieve_json/
+    # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: Linear10PercentEvery10Minutes
+      Events:
+        DynamoS3Function:
+          Type: S3
+          Properties:
+            Bucket: 
+              Ref: JSONBucket
+            Events: s3:ObjectCreated:*
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName:
+          Fn::Sub: id
+        AttributeType: S
+      - AttributeName:
+          Fn::Sub: name
+        AttributeType: S
+      KeySchema:
+      - AttributeName:
+          Fn::Sub: id
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TableName:
+        Ref: TableName
+    
+    Outputs:

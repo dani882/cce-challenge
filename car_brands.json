@@ -1,0 +1,16 @@
+{
+   "brands":[
+      {
+         "id":1,
+         "name":"Volkswagen"
+      },
+      {
+         "id":2,
+         "name":"Toyota"
+      },
+      {
+         "id":3,
+         "name":"Tesla"
+      }
+   ]
+}
