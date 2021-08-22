@@ -11,6 +11,10 @@
       {
          "id":3,
          "name":"Tesla"
+      },
+      {
+         "id":4,
+         "name":"Mazda"
       }
    ]
 }

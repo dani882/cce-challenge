@@ -10,7 +10,6 @@ Globals:
         JSONBucket: 
           Ref: JSONBucket
 
-
 Description: >
   
   SAM Template for cce challenge
@@ -54,11 +53,6 @@ Resources:
       CodeUri: functions/upload_json/
       Handler: app.handler
       Runtime: nodejs12.x
-      Timeout: 3
-      MemorySize: 128
-      Environment:
-        Variables:
-          UploadBucket: !Ref JSONBucket  
       Policies:
         - S3WritePolicy:
             BucketName: !Ref JSONBucket
