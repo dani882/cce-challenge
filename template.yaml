@@ -15,11 +15,6 @@ Description: >
   
   SAM Template for cce challenge
 
-Parameters:
-  S3BucketName:
-    Type: String
-    Description: S3 Bucket name
-
 Resources:
   # HTTP API
   MyApi:
@@ -39,8 +34,7 @@ Resources:
   JSONBucket: # Create S3 bucket to be used for upload and retrieve json files
     Type: AWS::S3::Bucket
     Properties: 
-      BucketName: 
-        Ref: S3BucketName
+      BucketName: !Sub "${AWS::StackName}-${AWS::Region}-${AWS::AccountId}"
       CorsConfiguration:
         CorsRules:
         - AllowedHeaders:
