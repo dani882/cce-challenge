@@ -69,10 +69,6 @@ Resources:
             Path: /uploads
             Method: get
             ApiId: !Ref MyApi
-    # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
-    AutoPublishAlias: live
-    DeploymentPreference:
-      Type: Linear10PercentEvery10Minutes
 
   DynamoS3Function: # Lambda to retrieve data from dynamodb
     Type: AWS::Serverless::Function
