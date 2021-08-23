@@ -69,18 +69,17 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
             Action:
               - s3:putObjectAcl
+      # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Linear10PercentEvery10Minutes
       Events:
         UploadAssetAPIEvent:
           Type: HttpApi
           Properties:
             Path: /uploads
             Method: get
-            ApiId: !Ref MyApi
-    # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
-    AutoPublishAlias: live
-    DeploymentPreference:
-      Type: Linear10PercentEvery10Minutes
-
+            ApiId: !Ref MyApi  
   DynamoS3Function: # Lambda to retrieve data from dynamodb
     Type: AWS::Serverless::Function
     Properties:
