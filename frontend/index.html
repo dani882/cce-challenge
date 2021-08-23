@@ -10,15 +10,15 @@
       <h1>S3 Uploader Test</h1>
   
       <div v-if="!image">
-        <h2>Select an image</h2>
+        <h2>Select a File</h2>
         <input type="file" @change="onFileChange">
       </div>
-      <div v-else>
+      <!-- <div v-else>
         <img :src="image" />
         <button v-if="!uploadURL" @click="removeImage">Remove image</button>
         <button v-if="!uploadURL" @click="uploadImage">Upload image</button>
-      </div>
-      <h2 v-if="uploadURL">Success! Image uploaded to bucket.</h2>
+      </div> -->
+      <!-- <h2 v-if="uploadURL">Success! Image uploaded to bucket.</h2> -->
     </div>
   
     <script>
@@ -44,16 +44,21 @@
             // var image = new Image()
             let reader = new FileReader()
             reader.onload = (e) => {
-              console.log('length: ', e.target.result.includes('data:image/jpeg'))
-              if (!e.target.result.includes('data:image/jpeg')) {
-                return alert('Wrong file type - JPG only.')
-              }
+              const result = JSON.parse(e.target.result);
+              const formatted = JSON.stringify(result, null, 2);
+
+
+            //  console.log('length: ', e.target.result.includes('data:image/jpeg'))
+             // if (!e.target.result.includes('data:image/jpeg')) {
+            //    return alert('Wrong file type - JPG only.')
+            //  }
               if (e.target.result.length > MAX_IMAGE_SIZE) {
                 return alert('Image is loo large.')
               }
               this.image = e.target.result
             }
-            reader.readAsDataURL(file)
+            reader.readAsText(files.item(0))
+           // reader.readAsDataURL(file)
           },
           removeImage: function (e) {
             console.log('Remove clicked')
