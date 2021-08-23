@@ -7,11 +7,12 @@ Globals:
     MemorySize: 128
     Environment:
       Variables:
-        JSONBucket:
+        JSONBucket: 
           Ref: JSONBucket
 
-Description: >
 
+Description: >
+  
   SAM Template for cce challenge
 
 Resources:
@@ -20,48 +21,54 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       # CORS configuration - this is open for development only and should be restricted in prod.
-      # See https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html
+      # See https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html   
       CorsConfiguration:
         AllowMethods:
           - GET
           - POST
         AllowHeaders:
-          - "*"
-        AllowOrigins:
-          - "*"
+          - "*"   
+        AllowOrigins: 
+          - "*"      
 
   JSONBucket: # Create S3 bucket to be used for upload and retrieve json files
     Type: AWS::S3::Bucket
-    Properties:
+    Properties: 
       BucketName: !Sub "${AWS::StackName}-${AWS::Region}-${AWS::AccountId}"
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - HEAD
-            AllowedOrigins:
-              - "*"
+        - AllowedHeaders:
+            - "*"
+          AllowedMethods:
+            - GET
+            - PUT
+            - HEAD
+          AllowedOrigins:
+            - "*"
 
+  ## Lambda functions
   UploadRequestFunction:
     # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Type: AWS::Serverless::Function
+    Type: AWS::Serverless::Function 
     Properties:
       CodeUri: functions/upload_json/
       Handler: app.handler
       Runtime: nodejs12.x
+      Timeout: 3
+      MemorySize: 128
+      Environment:
+        Variables:
+          UploadBucket: !Ref JSONBucket  
       Policies:
         - S3WritePolicy:
             BucketName: !Ref JSONBucket
         ## This permission allows the Lambda function to request signed URLs
         ## for objects that will be publicly readable. Uncomment if you want this ACL.
         - Statement:
-            - Effect: Allow
-              Resource: !Sub "arn:aws:s3:::${JSONBucket}/"
-              Action:
-                - s3:putObjectAcl
+          - Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
+            Action:
+              - s3:putObjectAcl
       Events:
         UploadAssetAPIEvent:
           Type: HttpApi
@@ -69,23 +76,27 @@ Resources:
             Path: /uploads
             Method: get
             ApiId: !Ref MyApi
+    # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: Linear10PercentEvery10Minutes
 
   DynamoS3Function: # Lambda to retrieve data from dynamodb
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/retrieve_json/
-      Runtime: python3.8
-      Handler: lambda_function.lambda_handler
-      Policies:
-        - DynamoDBWritePolicy:
-            TableName:
-              Ref: DynamoDBTable
-        - S3ReadPolicy:
-            BucketName:
-              Ref: JSONBucket
-        - Statement:
+        CodeUri: functions/retrieve_json/
+        Runtime: python3.8
+        Handler: lambda_function.lambda_handler
+        Policies:
+          - DynamoDBWritePolicy: 
+              TableName:
+                Ref: DynamoDBTable
+          - S3ReadPolicy: 
+              BucketName: 
+                Ref: JSONBucket
+          - Statement:
             - Effect: Allow
-              Resource: !Sub "arn:aws:s3:::${JSONBucket}/"
+              Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
               Action:
                 - s3:GetObject
     # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
@@ -102,23 +113,25 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: ".json"
+                    Value: '.json'
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: Brands
       AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: "N"
-
-        - AttributeName: name
-          AttributeType: "S"
+      - 
+        AttributeName: id
+        AttributeType: "N"
+      
+      - 
+        AttributeName: name
+        AttributeType: "S"
       KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-        - AttributeName: name
-          KeyType: RANGE
+      - AttributeName: id
+        KeyType: HASH
+      - AttributeName: name
+        KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
@@ -127,3 +140,4 @@ Outputs:
   APIendpoint:
     Description: "HTTP API endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
+
