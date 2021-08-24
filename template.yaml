@@ -10,7 +10,6 @@ Globals:
         JSONBucket: 
           Ref: JSONBucket
 
-
 Description: >
   
   SAM Template for cce challenge
@@ -21,12 +20,9 @@ Parameters:
     Description: S3 Bucket name
 
 Resources:
-  # HTTP API
   MyApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      # CORS configuration - this is open for development only and should be restricted in prod.
-      # See https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html   
       CorsConfiguration:
         AllowMethods:
           - GET
@@ -39,8 +35,7 @@ Resources:
   JSONBucket: # Create S3 bucket to be used for upload and retrieve json files
     Type: AWS::S3::Bucket
     Properties: 
-      BucketName: 
-        Ref: S3BucketName
+      BucketName: !Ref S3BucketName
       CorsConfiguration:
         CorsRules:
         - AllowedHeaders:
@@ -54,7 +49,6 @@ Resources:
 
   ## Lambda functions
   UploadRequestFunction:
-    # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Type: AWS::Serverless::Function 
     Properties:
       CodeUri: functions/upload_json/
@@ -75,10 +69,6 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
             Action:
               - s3:putObjectAcl
-      # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
-      AutoPublishAlias: live
-      DeploymentPreference:
-        Type: Linear10PercentEvery10Minutes
       Events:
         UploadAssetAPIEvent:
           Type: HttpApi
@@ -86,39 +76,36 @@ Resources:
             Path: /uploads
             Method: get
             ApiId: !Ref MyApi  
-  DynamoS3Function: # Lambda to retrieve data from dynamodb
+  
+  DynamoS3Function:
     Type: AWS::Serverless::Function
     Properties:
-        CodeUri: functions/retrieve_json/
-        Runtime: python3.8
-        Handler: lambda_function.lambda_handler
-        Policies:
-          - DynamoDBWritePolicy: 
-              TableName:
-                Ref: DynamoDBTable
-          - S3ReadPolicy: 
-              BucketName: 
-                Ref: JSONBucket
-          - Statement:
-            - Effect: Allow
-              Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
-              Action:
-                - s3:GetObject
-    # For safe deployment with CodeDeploy https://github.com/aws/serverless-application-model/blob/master/docs/safe_lambda_deployments.rst
-    AutoPublishAlias: live
-    DeploymentPreference:
-      Type: Linear10PercentEvery10Minutes
-      Events:
-        DynamoS3FunctionEvent:
-          Type: S3
-          Properties:
-            Bucket: !Ref JSONBucket
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: '.json'
+      CodeUri: functions/retrieve_json/
+      Runtime: python3.8
+      Handler: lambda_function.lambda_handler
+      Policies:
+        - DynamoDBWritePolicy: 
+            TableName:
+              Ref: DynamoDBTable
+        - S3ReadPolicy: 
+            BucketName: 
+              Ref: S3BucketName
+        - Statement:
+          - Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
+            Action:
+              - s3:GetObject
+    Events:
+      S3NewObjectEvent:
+        Type: S3
+        Properties:
+          Bucket: !Ref JSONBucket
+          Events: s3:ObjectCreated:*
+          Filter:
+            S3Key:
+              Rules:
+                - Name: suffix
+                  Value: ".json"
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
@@ -142,7 +129,6 @@ Resources:
         PointInTimeRecoveryEnabled: true
 
 Outputs:
-  APIendpoint:
+  APIEndpoint:
     Description: "HTTP API endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com"
-
