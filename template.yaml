@@ -1,23 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
-Globals:
-  Function:
-    Timeout: 3
-    MemorySize: 128
-    Environment:
-      Variables:
-        JSONBucket: 
-          Ref: JSONBucket
-
 Description: >
-  
+
   SAM Template for cce challenge
 
 Parameters:
   S3BucketName:
     Type: String
-    Description: S3 Bucket name
+    Description: "Unique S3 bucket name to use for the app."
 
 Resources:
   MyApi:
@@ -28,28 +19,28 @@ Resources:
           - GET
           - POST
         AllowHeaders:
-          - "*"   
-        AllowOrigins: 
-          - "*"      
+          - "*"
+        AllowOrigins:
+          - "*"
 
   JSONBucket: # Create S3 bucket to be used for upload and retrieve json files
     Type: AWS::S3::Bucket
-    Properties: 
+    Properties:
       BucketName: !Ref S3BucketName
       CorsConfiguration:
         CorsRules:
-        - AllowedHeaders:
-            - "*"
-          AllowedMethods:
-            - GET
-            - PUT
-            - HEAD
-          AllowedOrigins:
-            - "*"
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+            AllowedOrigins:
+              - "*"
 
   ## Lambda functions
   UploadRequestFunction:
-    Type: AWS::Serverless::Function 
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/upload_json/
       Handler: app.handler
@@ -58,72 +49,74 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          UploadBucket: !Ref JSONBucket  
+          UploadBucket: !Ref JSONBucket
       Policies:
         - S3WritePolicy:
             BucketName: !Ref JSONBucket
         ## This permission allows the Lambda function to request signed URLs
         ## for objects that will be publicly readable. Uncomment if you want this ACL.
         - Statement:
-          - Effect: Allow
-            Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
-            Action:
-              - s3:putObjectAcl
+            - Effect: Allow
+              Resource: !Sub "arn:aws:s3:::${JSONBucket}/"
+              Action:
+                - s3:putObjectAcl
       Events:
         UploadAssetAPIEvent:
           Type: HttpApi
           Properties:
             Path: /uploads
             Method: get
-            ApiId: !Ref MyApi  
-  
+            ApiId: !Ref MyApi
+
   DynamoS3Function:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/retrieve_json/
       Runtime: python3.8
       Handler: lambda_function.lambda_handler
+      Description: Uses s3 event to persist to dynamodb
       Policies:
-        - DynamoDBWritePolicy: 
-            TableName:
-              Ref: DynamoDBTable
-        - S3ReadPolicy: 
-            BucketName: 
-              Ref: S3BucketName
-        - Statement:
-          - Effect: Allow
-            Resource: !Sub 'arn:aws:s3:::${JSONBucket}/'
-            Action:
-              - s3:GetObject
-    Events:
-      S3NewObjectEvent:
-        Type: S3
-        Properties:
-          Bucket: !Ref JSONBucket
-          Events: s3:ObjectCreated:*
-          Filter:
-            S3Key:
-              Rules:
-                - Name: suffix
-                  Value: ".json"
+        - DynamoDBWritePolicy:
+            TableName: !Ref DynamoDBTable
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketName
+      Events:
+        DynamoS3FunctionEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref JSONBucket
+            Events:
+              - "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: ".json"
+
+  LambdaInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !GetAtt DynamoS3Function.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "s3.amazonaws.com"
+      SourceAccount: !Sub ${AWS::AccountId}
+      SourceArn: !GetAtt JSONBucket.Arn
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: Brands
       AttributeDefinitions:
-      - 
-        AttributeName: id
-        AttributeType: "N"
-      
-      - 
-        AttributeName: name
-        AttributeType: "S"
+        - AttributeName: id
+          AttributeType: "N"
+
+        - AttributeName: name
+          AttributeType: "S"
       KeySchema:
-      - AttributeName: id
-        KeyType: HASH
-      - AttributeName: name
-        KeyType: RANGE
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: name
+          KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
