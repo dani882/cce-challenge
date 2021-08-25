@@ -11,7 +11,7 @@ This application creates a serverless infrastructure to handle events on S3 when
 
 * AWS CLI already configured with at least PowerUser permission
 * [Python 3 installed](https://www.python.org/downloads/)
-* [Docker installed](https://www.docker.com/community-edition)
+* [Docker installed](https://www.docker.com/community-edition) ([Optional] For local testing)
 * [SAM Local installed](https://github.com/awslabs/aws-sam-local)
 ### Build Your Application
 
@@ -30,8 +30,10 @@ Build the Lambda functions in your application with the `sam build --use-contain
 sam build --use-container
 ```
 
-The SAM CLI installs dependencies defined in `functions/*/requirements.txt`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+The SAM CLI installs dependencies defined in `functions/*/requirements.txt` and `functions/*/package.json`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
 
+## Deploy to AWS
+To create the stack just use the `san deploy --guided` command. Then just follow the wizard.
 
 ## Cleanup
 
