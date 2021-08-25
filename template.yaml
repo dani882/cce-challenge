@@ -42,7 +42,7 @@ Resources:
   UploadRequestFunction:
     Type: AWS::Serverless::Function
     Properties:
-    #  CodeUri: functions/upload_json/
+      CodeUri: functions/upload_json/
       Handler: app.handler
       Runtime: nodejs12.x
       Timeout: 3
